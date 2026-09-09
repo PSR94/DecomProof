@@ -1,4 +1,54 @@
-use crate::evidence::Evidence;use serde::{Deserialize,Serialize};
-#[derive(Debug,Clone,Serialize,Deserialize)]pub struct Verification{pub verdict:String,pub failures:u64,pub remaining_resources:u64,pub evidence_ids:Vec<String>}
-pub fn verify(evidence:&[Evidence])->Verification{let failures=evidence.iter().filter(|e|e.signal.starts_with("verification.failure")&&e.normalized.get("count").and_then(|v|v.as_u64()).unwrap_or(0)>0).count() as u64;let remaining=evidence.iter().filter(|e|e.signal=="infra.resource"||e.signal=="cleanup.leftover").count() as u64;let verdict=if failures>0{"regression-detected"}else if remaining>0{"partial-cleanup"}else{"verified"};Verification{verdict:verdict.into(),failures,remaining_resources:remaining,evidence_ids:evidence.iter().map(|e|e.id.clone()).collect()}}
-#[cfg(test)]mod tests{use super::*;#[test]fn empty_verification_is_not_failure(){assert_eq!(verify(&[]).verdict,"verified");}}
+use crate::evidence::Evidence;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Verification {
+    pub verdict: String,
+    pub failures: u64,
+    pub remaining_resources: u64,
+    pub evidence_ids: Vec<String>,
+}
+
+pub fn verify(evidence: &[Evidence]) -> Verification {
+    if evidence.is_empty() {
+        return Verification {
+            verdict: "insufficient-evidence".into(),
+            failures: 0,
+            remaining_resources: 0,
+            evidence_ids: vec![],
+        };
+    }
+    let failures = evidence
+        .iter()
+        .filter(|e| {
+            e.signal.starts_with("verification.failure")
+                && e.normalized.get("count").and_then(|v| v.as_u64()).unwrap_or(0) > 0
+        })
+        .count() as u64;
+    let remaining = evidence
+        .iter()
+        .filter(|e| e.signal == "infra.resource" || e.signal == "cleanup.leftover")
+        .count() as u64;
+    let verdict = if failures > 0 {
+        "regression-detected"
+    } else if remaining > 0 {
+        "partial-cleanup"
+    } else {
+        "verified"
+    };
+    Verification {
+        verdict: verdict.into(),
+        failures,
+        remaining_resources: remaining,
+        evidence_ids: evidence.iter().map(|e| e.id.clone()).collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn empty_verification_fails_conservatively() {
+        assert_eq!(verify(&[]).verdict, "insufficient-evidence");
+    }
+}

@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
-stage="${1:-0}"
-root="examples/atlascommerce/stages/stage-${stage}"
-case "$stage" in
-  5) cargo run -q -p decomproof -- verify service:legacy-export --evidence "$root/cleanup-leftovers.jsonl" ;;
-  6) cargo run -q -p decomproof -- verify service:legacy-export --evidence "$root/runtime.jsonl" ;;
-  *) cargo run -q -p decomproof -- analyze service:legacy-export --root "$root" --evidence "$root/runtime.jsonl" --output "retirement.proof.json" ;;
-esac
+stage="${1:-all}"
+run_stage() {
+  local s="$1"
+  echo
+  echo "=== AtlasCommerce stage ${s} ==="
+  set +e
+  cargo run -q -p decomproof -- demo --stage "$s"
+  local code=$?
+  set -e
+  if [[ "$s" -le 3 && "$code" -eq 2 ]]; then
+    echo "stage ${s}: expected safety gate refusal"
+    return 0
+  fi
+  return "$code"
+}
+if [[ "$stage" == "all" ]]; then
+  for s in 0 1 2 3 4 5 6; do run_stage "$s"; done
+else
+  run_stage "$stage"
+fi

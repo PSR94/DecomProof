@@ -15,7 +15,8 @@ lint:
 	cargo fmt --all --check
 	cargo clippy --workspace --all-targets -- -D warnings
 
-demo: demo-stage-0
+demo:
+	./scripts/demo.sh all
 
 demo-stage-0:
 	./scripts/demo.sh 0
