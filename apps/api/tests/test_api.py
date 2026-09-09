@@ -1,24 +1,29 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from decomproof_api.main import app
 
-client = TestClient(app)
+
+@pytest.fixture
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
 
 
-def test_health():
+def test_health(client):
     response = client.get("/healthz")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-def test_project_round_trip():
+def test_project_round_trip(client):
     response = client.post("/api/v1/projects", json={"name": "atlas-test"})
     assert response.status_code in (201, 409)
     listed = client.get("/api/v1/projects").json()
     assert any(project["name"] == "atlas-test" for project in listed)
 
 
-def test_rejects_unknown_proof_schema():
+def test_rejects_unknown_proof_schema(client):
     proof = {
         "schema": "decomproof/v999",
         "target": {"kind": "service", "id": "x"},
