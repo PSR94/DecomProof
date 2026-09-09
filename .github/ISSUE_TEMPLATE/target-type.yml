@@ -1,0 +1,10 @@
+name: Target type request
+description: Propose a new software component kind for retirement analysis.
+body:
+  - type: input
+    id: target
+    attributes: {label: Target identifier example, placeholder: queue:legacy-retry}
+    validations: {required: true}
+  - type: textarea
+    id: blockers
+    attributes: {label: Removal blockers, description: Which evidence families should prevent safe removal?}

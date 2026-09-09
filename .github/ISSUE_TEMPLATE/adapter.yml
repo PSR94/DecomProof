@@ -1,0 +1,10 @@
+name: Adapter request
+description: Request a runtime/data/event/infrastructure evidence source.
+body:
+  - type: input
+    id: source
+    attributes: {label: Evidence system, placeholder: Datadog, CloudWatch, Snowflake}
+    validations: {required: true}
+  - type: textarea
+    id: claims
+    attributes: {label: Evidence claims and coverage, description: What can the source prove, over what window, and what can it not observe?}

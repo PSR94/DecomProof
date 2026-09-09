@@ -1,0 +1,10 @@
+name: Feature request
+description: Propose a product or workflow improvement.
+body:
+  - type: textarea
+    id: usecase
+    attributes: {label: Decommission use case, description: What removal decision becomes safer or easier?}
+    validations: {required: true}
+  - type: textarea
+    id: evidence
+    attributes: {label: Evidence semantics, description: What claim would this introduce and what uncertainty remains?}

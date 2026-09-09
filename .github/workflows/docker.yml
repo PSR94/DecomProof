@@ -1,0 +1,17 @@
+name: Docker builds
+on:
+  pull_request:
+    paths: ['apps/**', 'docker-compose.yml', '.github/workflows/docker.yml']
+  push:
+    branches: [main]
+    paths: ['apps/**', 'docker-compose.yml', '.github/workflows/docker.yml']
+
+permissions: {contents: read}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy: {matrix: {component: [api, dashboard, atlascommerce]}}
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t decomproof-${{ matrix.component }}:ci apps/${{ matrix.component }}
+      - run: docker compose config --quiet

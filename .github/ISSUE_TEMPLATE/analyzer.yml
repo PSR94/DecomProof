@@ -1,0 +1,10 @@
+name: Analyzer request
+description: Request static analysis for a language/framework/configuration.
+body:
+  - type: input
+    id: ecosystem
+    attributes: {label: Ecosystem, placeholder: Java / Spring, Go, etc.}
+    validations: {required: true}
+  - type: textarea
+    id: examples
+    attributes: {label: Dependency forms to detect, description: Show representative non-secret syntax and likely false-positive/false-negative cases.}
