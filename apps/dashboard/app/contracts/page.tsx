@@ -1,0 +1,1 @@
+import { SectionPage } from "@/components/section-page"; export default function Page(){return <SectionPage title="API / SDK contract exposure" subtitle="Public OpenAPI paths and package exports that constrain removal." prefixes={["contract.","sdk."]}/>}

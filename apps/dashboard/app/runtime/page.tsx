@@ -1,0 +1,1 @@
+import { SectionPage } from "@/components/section-page"; export default function Page(){return <SectionPage title="Runtime usage" subtitle="Requests, consumers, windows and freshness from dynamic evidence." prefixes={["runtime.","metric."]}/>}

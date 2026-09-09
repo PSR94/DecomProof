@@ -1,0 +1,1 @@
+import { SectionPage } from "@/components/section-page"; export default function Page(){return <SectionPage title="Infrastructure" subtitle="Terraform, Kubernetes and deployment resources connected to the target." prefixes={["infra."]}/>}

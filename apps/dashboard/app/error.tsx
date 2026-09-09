@@ -1,0 +1,1 @@
+"use client";export default function Error({error,reset}:{error:Error&{digest?:string};reset:()=>void}){return <div><div className="eyebrow severity-high">Error state</div><h1>Evidence view failed</h1><div className="empty error"><p>{error.message}</p><button className="button" onClick={reset}>Retry</button></div></div>}

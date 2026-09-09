@@ -1,0 +1,1 @@
+export default function Loading(){return <div><div className="eyebrow">Loading evidence</div><h1>Resolving latest proof…</h1><div className="grid"><div className="card span4"><div className="bar"><span style={{width:"45%"}}/></div></div><div className="card span8"><div className="bar"><span style={{width:"70%"}}/></div></div></div></div>}

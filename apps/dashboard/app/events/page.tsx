@@ -1,0 +1,1 @@
+import { SectionPage } from "@/components/section-page"; export default function Page(){return <SectionPage title="Events" subtitle="Event topics, producers, consumers and observed activity." prefixes={["event."]}/>}
