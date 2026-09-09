@@ -2,6 +2,7 @@ pub mod config;
 pub mod evidence;
 pub mod graph;
 pub mod ingest;
+pub mod lifecycle;
 pub mod policy;
 pub mod proof;
 pub mod report;
@@ -13,6 +14,7 @@ pub mod verify;
 
 pub use config::Config;
 pub use evidence::{Confidence, Consumer, Evidence, ObservationWindow, Uncertainty};
+pub use lifecycle::{LifecycleRecord, LifecycleState, LifecycleStore};
 pub use policy::{Blocker, PolicyDecision, Verdict};
 pub use proof::{AnalysisResult, RetirementProof};
 pub use target::Target;

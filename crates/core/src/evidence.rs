@@ -33,6 +33,8 @@ pub struct Evidence {
     pub observed_at: DateTime<Utc>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observation_window: Option<ObservationWindow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub freshness_seconds: Option<i64>,
     pub confidence: Confidence,
     #[serde(default)]
     pub observed: BTreeMap<String, serde_json::Value>,
@@ -52,7 +54,7 @@ impl Evidence {
         let raw_hash = format!("sha256:{}", hex::encode(Sha256::digest(raw)));
         let stable = format!("{}\n{}\n{}\n{}", signal, source, target.stable_id(), raw_hash);
         let id = format!("ev_{}", &hex::encode(Sha256::digest(stable.as_bytes()))[..20]);
-        Self { id, signal: signal.into(), source: source.into(), target: target.stable_id(), observed_at, observation_window: None, confidence: Confidence::Medium, observed: BTreeMap::new(), normalized: BTreeMap::new(), consumer: None, artifact, raw_hash, notes: vec![] }
+        Self { id, signal: signal.into(), source: source.into(), target: target.stable_id(), observed_at, observation_window: None, freshness_seconds: None, confidence: Confidence::Medium, observed: BTreeMap::new(), normalized: BTreeMap::new(), consumer: None, artifact, raw_hash, notes: vec![] }
     }
     pub fn age_seconds(&self, now: DateTime<Utc>) -> i64 { (now - self.observed_at).num_seconds().max(0) }
 }
