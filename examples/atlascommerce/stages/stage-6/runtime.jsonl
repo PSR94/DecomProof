@@ -1,0 +1,3 @@
+{"signal":"runtime.http.requests","source":"access-log","observed_at":"2026-09-09T21:00:00Z","window_start":"2026-09-08T21:00:00Z","window_end":"2026-09-09T21:00:00Z","count":0,"active":false}
+{"signal":"verification.failure.requests","source":"access-log","observed_at":"2026-09-09T21:00:00Z","count":0,"active":false}
+{"signal":"verification.failure.schedules","source":"scheduler-fixture","observed_at":"2026-09-09T21:00:00Z","count":0,"active":false}

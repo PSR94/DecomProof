@@ -1,0 +1,6 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: nightly-finance-export}
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate: {spec: {template: {spec: {containers: [{name: finance, args: ["POST", "http://legacy-export/internal/legacy-export"]}]}}}}

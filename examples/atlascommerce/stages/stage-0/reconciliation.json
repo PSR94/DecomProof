@@ -1,0 +1,1 @@
+{"consumerGroup":"partner-reconciliation-prod","topic":"invoice.completed","handler":"legacy-export"}

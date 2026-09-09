@@ -1,0 +1,2 @@
+{"signal":"runtime.http.requests","source":"access-log","observed_at":"2026-09-09T20:56:00Z","window_start":"2026-08-10T00:00:00Z","window_end":"2026-09-09T20:56:00Z","count":8,"active":true,"consumer_type":"api-key","consumer_id":"customer-api-key-1842","consumer_identification":"identified"}
+{"signal":"database.write","source":"postgres-fixture","observed_at":"2026-09-09T20:03:00Z","window_start":"2026-08-10T00:00:00Z","window_end":"2026-09-09T20:03:00Z","count":23,"active":true}

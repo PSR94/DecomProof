@@ -1,0 +1,3 @@
+{"signal":"runtime.http.requests","source":"access-log","observed_at":"2026-09-09T20:56:00Z","window_start":"2026-07-20T00:00:00Z","window_end":"2026-09-09T20:56:00Z","count":0,"active":false}
+{"signal":"database.write","source":"postgres-fixture","observed_at":"2026-09-09T20:03:00Z","window_start":"2026-07-20T00:00:00Z","window_end":"2026-09-09T20:03:00Z","count":0,"active":false}
+{"signal":"event.consume","source":"kafka-fixture","observed_at":"2026-09-09T19:10:00Z","window_start":"2026-07-20T00:00:00Z","window_end":"2026-09-09T19:10:00Z","count":0,"active":false}

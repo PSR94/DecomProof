@@ -1,0 +1,2 @@
+{"signal":"cleanup.leftover","source":"kubernetes-fixture","observed_at":"2026-09-09T21:00:00Z","count":1,"active":true,"resource":"Secret/legacy-export-token"}
+{"signal":"verification.failure.requests","source":"access-log","observed_at":"2026-09-09T21:00:00Z","count":0,"active":false}
