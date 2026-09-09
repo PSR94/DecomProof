@@ -1,0 +1,5 @@
+[project]
+name = "atlascommerce-demo"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1", "psycopg[binary]>=3.2,<4", "httpx>=0.27,<1"]

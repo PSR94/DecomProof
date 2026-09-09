@@ -1,0 +1,65 @@
+name: DecomProof Removal Gate
+description: Generate a deterministic retirement proof and fail a PR when removal is blocked or evidence is insufficient.
+inputs:
+  target:
+    description: Target identifier such as service:legacy-export
+    required: true
+  root:
+    description: Workspace root to scan
+    default: .
+  evidence:
+    description: Optional generic JSONL evidence file
+    required: false
+  config:
+    description: DecomProof configuration path
+    default: .decomproof.yml
+  proof-path:
+    description: Output proof path
+    default: retirement.proof.json
+  fail-on:
+    description: blocked (default) or never
+    default: blocked
+outputs:
+  proof-path:
+    description: Generated proof artifact path
+    value: ${{ steps.run.outputs.proof_path }}
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      env:
+        DP_TARGET: ${{ inputs.target }}
+        DP_ROOT: ${{ inputs.root }}
+        DP_EVIDENCE: ${{ inputs.evidence }}
+        DP_CONFIG: ${{ inputs.config }}
+        DP_PROOF: ${{ inputs.proof-path }}
+        DP_FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        set -euo pipefail
+        if ! command -v cargo >/dev/null 2>&1; then
+          echo "Rust/cargo is required on the runner." >&2
+          exit 1
+        fi
+        args=(--config "$DP_CONFIG" analyze "$DP_TARGET" --root "$DP_ROOT" --output "$DP_PROOF")
+        if [[ -n "$DP_EVIDENCE" ]]; then args+=(--evidence "$DP_EVIDENCE"); fi
+        set +e
+        cargo run --quiet --manifest-path "$GITHUB_ACTION_PATH/../../Cargo.toml" -p decomproof -- "${args[@]}"
+        code=$?
+        set -e
+        echo "proof_path=$DP_PROOF" >> "$GITHUB_OUTPUT"
+        if [[ -f "$DP_PROOF" ]]; then
+          {
+            echo "## DecomProof Removal Gate"
+            echo
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Target | \`$(jq -r '.target.kind + ":" + .target.id' "$DP_PROOF")\` |"
+            echo "| Readiness | $(jq -r '.score' "$DP_PROOF") / 100 |"
+            echo "| Verdict | \`$(jq -r '.verdict' "$DP_PROOF")\` |"
+            echo "| Hard blockers | $(jq '[.blockers[] | select(.hard == true)] | length' "$DP_PROOF") |"
+            echo "| Uncertainties | $(jq '.uncertainties | length' "$DP_PROOF") |"
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
+        if [[ "$DP_FAIL_ON" == "never" ]]; then exit 0; fi
+        exit "$code"

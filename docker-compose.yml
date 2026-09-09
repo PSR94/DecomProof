@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: atlas
+      POSTGRES_DB: atlas
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./apps/atlascommerce/schema.sql:/docker-entrypoint-initdb.d/10-atlas.sql:ro
+      - ./apps/api/migrations/0001_initial.sql:/docker-entrypoint-initdb.d/20-decomproof.sql:ro
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: decomproof
+      MINIO_ROOT_PASSWORD: local-development-only
+    volumes:
+      - minio-data:/data
+
+  atlascommerce:
+    build: ./apps/atlascommerce
+    environment:
+      DATABASE_URL: postgresql://atlas:atlas@postgres:5432/atlas
+      ATLAS_ACCESS_LOG: /data/access.jsonl
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports: ["8080:8080"]
+    volumes:
+      - demo-evidence:/data
+
+  api:
+    build: ./apps/api
+    environment:
+      DECOMPROOF_DATABASE_URL: postgresql+psycopg://atlas:atlas@postgres:5432/atlas
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports: ["8000:8000"]
+
+  dashboard:
+    build: ./apps/dashboard
+    environment:
+      DECOMPROOF_API_URL: http://api:8000/api/v1
+    depends_on: [api]
+    ports: ["3000:3000"]
+
+volumes:
+  postgres-data:
+  minio-data:
+  demo-evidence:
