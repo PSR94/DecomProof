@@ -3,16 +3,35 @@ on:
   push:
     branches: [main]
   pull_request:
-permissions: {contents: read}
+permissions:
+  contents: read
 jobs:
   rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with: {components: rustfmt, clippy}
+        with:
+          components: rustfmt,clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all --check
+      - name: Check Rust formatting
+        id: rustfmt
+        continue-on-error: true
+        run: cargo fmt --all --check
+      - name: Export rustfmt output for repair
+        if: steps.rustfmt.outcome == 'failure'
+        run: |
+          cargo fmt --all
+          tar -czf rustfmt-output.tar.gz crates
+      - uses: actions/upload-artifact@v4
+        if: steps.rustfmt.outcome == 'failure'
+        with:
+          name: rustfmt-output
+          path: rustfmt-output.tar.gz
+          if-no-files-found: error
+      - name: Enforce Rust formatting
+        if: steps.rustfmt.outcome == 'failure'
+        run: exit 1
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
   proof-and-demo:
@@ -27,27 +46,38 @@ jobs:
       - run: python scripts/validate-proof.py retirement.proof.json
       - uses: actions/upload-artifact@v4
         if: always()
-        with: {name: retirement-proof, path: retirement.proof.json, if-no-files-found: warn}
+        with:
+          name: retirement-proof
+          path: retirement.proof.json
+          if-no-files-found: warn
   api:
     runs-on: ubuntu-latest
-    defaults: {run: {working-directory: apps/api}}
+    defaults:
+      run:
+        working-directory: apps/api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: '3.12'}
+        with:
+          python-version: '3.12'
       - run: pip install -e '.[dev]'
       - run: ruff check decomproof_api tests
       - run: pytest -q
   dashboard:
     runs-on: ubuntu-latest
-    defaults: {run: {working-directory: apps/dashboard}}
+    defaults:
+      run:
+        working-directory: apps/dashboard
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: '22'}
+        with:
+          node-version: '22'
       - run: npm install
       - run: npm run test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
   security-preflight:
     runs-on: ubuntu-latest
     steps:
