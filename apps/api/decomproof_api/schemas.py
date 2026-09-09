@@ -1,8 +1,7 @@
-from datetime import datetime
 from typing import Any, Literal
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 Verdict = Literal[
     "blocked",
@@ -66,10 +65,23 @@ class AnalysisView(BaseModel):
 
 
 class LifecycleUpdate(BaseModel):
-    state: Literal["ACTIVE", "DEPRECATED", "OBSERVING", "QUIESCENT", "READY", "REMOVED", "VERIFIED"]
+    state: Literal[
+        "ACTIVE",
+        "DEPRECATED",
+        "OBSERVING",
+        "QUIESCENT",
+        "READY",
+        "REMOVED",
+        "VERIFIED",
+    ]
     note: str | None = Field(default=None, max_length=2000)
 
 
 class VerificationCreate(BaseModel):
-    verdict: Literal["insufficient-evidence", "partial-cleanup", "regression-detected", "verified"]
+    verdict: Literal[
+        "insufficient-evidence",
+        "partial-cleanup",
+        "regression-detected",
+        "verified",
+    ]
     payload: dict[str, Any]
