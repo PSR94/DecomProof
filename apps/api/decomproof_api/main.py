@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 from . import models
 from .db import engine
@@ -36,5 +37,9 @@ def readyz():
         with engine.connect() as conn:
             conn.exec_driver_sql("SELECT 1")
         return {"status": "ready"}
-    except Exception as exc:  # health endpoint deliberately avoids leaking connection details
-        return JSONResponse(status_code=503, content={"status": "not-ready", "reason": type(exc).__name__})
+    except SQLAlchemyError as exc:
+        # Do not leak connection details from readiness failures.
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not-ready", "reason": type(exc).__name__},
+        )
