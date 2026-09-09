@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, io::ErrorKind, path::Path};
 use thiserror::Error;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     #[serde(default)]
@@ -100,16 +100,6 @@ pub struct PrivacyConfig {
 impl Default for PrivacyConfig {
     fn default() -> Self {
         Self { redact_regex: Vec::new(), hash_consumer_ids: true }
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            project: Project::default(),
-            policy: PolicyConfig::default(),
-            privacy: PrivacyConfig::default(),
-        }
     }
 }
 
