@@ -1,4 +1,5 @@
 import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -8,14 +9,22 @@ from . import models
 from .db import engine
 from .routes import router
 
-app = FastAPI(title="DecomProof API", version="0.1.0", docs_url="/docs")
-app.include_router(router)
 
-
-@app.on_event("startup")
-def create_dev_schema() -> None:
-    # Production deployments should apply migrations. This keeps local SQLite evaluation frictionless.
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Production deployments should apply migrations. create_all is non-destructive
+    # and keeps local SQLite evaluation and tests frictionless.
     models.Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(
+    title="DecomProof API",
+    version="0.1.0",
+    docs_url="/docs",
+    lifespan=lifespan,
+)
+app.include_router(router)
 
 
 @app.middleware("http")
