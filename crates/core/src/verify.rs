@@ -25,10 +25,9 @@ pub fn verify(evidence: &[Evidence]) -> Verification {
                 && e.normalized.get("count").and_then(|v| v.as_u64()).unwrap_or(0) > 0
         })
         .count() as u64;
-    let remaining = evidence
-        .iter()
-        .filter(|e| e.signal == "infra.resource" || e.signal == "cleanup.leftover")
-        .count() as u64;
+    let remaining =
+        evidence.iter().filter(|e| e.signal == "infra.resource" || e.signal == "cleanup.leftover").count()
+            as u64;
     let verdict = if failures > 0 {
         "regression-detected"
     } else if remaining > 0 {

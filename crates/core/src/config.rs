@@ -26,9 +26,7 @@ fn default_project() -> String {
 
 impl Default for Project {
     fn default() -> Self {
-        Self {
-            name: default_project(),
-        }
+        Self { name: default_project() }
     }
 }
 
@@ -101,10 +99,7 @@ pub struct PrivacyConfig {
 
 impl Default for PrivacyConfig {
     fn default() -> Self {
-        Self {
-            redact_regex: Vec::new(),
-            hash_consumer_ids: true,
-        }
+        Self { redact_regex: Vec::new(), hash_consumer_ids: true }
     }
 }
 

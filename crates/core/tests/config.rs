@@ -1,11 +1,12 @@
 use decomproof_core::config::{Config, ConfigError};
-use std::{fs, path::PathBuf, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    fs,
+    path::PathBuf,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 fn temp_path(name: &str) -> PathBuf {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("clock")
-        .as_nanos();
+    let unique = SystemTime::now().duration_since(UNIX_EPOCH).expect("clock").as_nanos();
     std::env::temp_dir().join(format!("decomproof-{name}-{unique}.yml"))
 }
 

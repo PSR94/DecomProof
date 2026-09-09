@@ -18,11 +18,7 @@ use std::{
 };
 
 #[derive(Parser)]
-#[command(
-    name = "decomproof",
-    version,
-    about = "Evidence-backed software decommissioning"
-)]
+#[command(name = "decomproof", version, about = "Evidence-backed software decommissioning")]
 struct Cli {
     #[arg(long, global = true, default_value = ".decomproof.yml")]
     config: PathBuf,
@@ -137,25 +133,15 @@ fn main() -> Result<()> {
         Command::Init => init(&cli.config),
         Command::Doctor => doctor(&cli.config),
         Command::Config => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&Config::load(&cli.config)?)?
-            );
+            println!("{}", serde_json::to_string_pretty(&Config::load(&cli.config)?)?);
             Ok(())
         }
         Command::Scan { target, root } => {
             let target: Target = target.parse()?;
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&scan_workspace(&root, &target))?
-            );
+            println!("{}", serde_json::to_string_pretty(&scan_workspace(&root, &target))?);
             Ok(())
         }
-        Command::Ingest {
-            target,
-            source,
-            file,
-        } => {
+        Command::Ingest { target, source, file } => {
             let target: Target = target.parse()?;
             let evidence = match source {
                 IngestSource::GenericJson => ingest_jsonl(&file, &target)?,
@@ -166,17 +152,10 @@ fn main() -> Result<()> {
             println!("{}", serde_json::to_string_pretty(&evidence)?);
             Ok(())
         }
-        Command::Analyze {
-            target,
-            root,
-            evidence,
-            output,
-        } => analyze(&cli.config, &target, &root, &evidence, &output, cli.json),
-        Command::Proof {
-            file,
-            format,
-            output,
-        } => {
+        Command::Analyze { target, root, evidence, output } => {
+            analyze(&cli.config, &target, &root, &evidence, &output, cli.json)
+        }
+        Command::Proof { file, format, output } => {
             let proof = load_proof(&file)?;
             let content = match if cli.json { ReportFormat::Json } else { format } {
                 ReportFormat::Terminal => report::terminal(&proof),
@@ -196,12 +175,7 @@ fn main() -> Result<()> {
             let evidence: Vec<_> = proof
                 .evidence
                 .iter()
-                .filter(|item| {
-                    signal
-                        .as_ref()
-                        .map(|expected| &item.signal == expected)
-                        .unwrap_or(true)
-                })
+                .filter(|item| signal.as_ref().map(|expected| &item.signal == expected).unwrap_or(true))
                 .collect();
             println!("{}", serde_json::to_string_pretty(&evidence)?);
             Ok(())
@@ -216,12 +190,7 @@ fn main() -> Result<()> {
             println!("{}", serde_json::to_string_pretty(&proof.blockers)?);
             Ok(())
         }
-        Command::Verify {
-            target,
-            evidence,
-            record_lifecycle,
-            state_file,
-        } => {
+        Command::Verify { target, evidence, record_lifecycle, state_file } => {
             let target: Target = target.parse()?;
             let mut all = Vec::new();
             for file in evidence {
@@ -258,21 +227,13 @@ fn main() -> Result<()> {
             }
             Ok(())
         }
-        Command::Lifecycle {
-            target,
-            set,
-            note,
-            state_file,
-            proof,
-        } => {
+        Command::Lifecycle { target, set, note, state_file, proof } => {
             let target: Target = target.parse()?;
             let mut store = LifecycleStore::load(&state_file)?;
             if let Some(raw) = set {
                 let next: LifecycleState = raw.parse()?;
                 if next == LifecycleState::Verified {
-                    anyhow::bail!(
-                        "VERIFIED can only be recorded by `decomproof verify --record-lifecycle`"
-                    );
+                    anyhow::bail!("VERIFIED can only be recorded by `decomproof verify --record-lifecycle`");
                 }
                 if next == LifecycleState::Ready {
                     let proof = load_proof(&proof).context("READY requires a generated proof")?;
@@ -290,10 +251,7 @@ fn main() -> Result<()> {
                 store.transition(&target, next, Utc::now(), note)?;
                 store.save(&state_file)?;
             }
-            println!(
-                "{}",
-                serde_json::to_string_pretty(store.record_for(&target, Utc::now()))?
-            );
+            println!("{}", serde_json::to_string_pretty(store.record_for(&target, Utc::now()))?);
             Ok(())
         }
         Command::History { target, root } => {
@@ -315,9 +273,7 @@ fn main() -> Result<()> {
                 let target: Target = "service:legacy-export".parse()?;
                 println!(
                     "{}",
-                    serde_json::to_string_pretty(&verify::verify(&ingest_jsonl(
-                        &evidence, &target
-                    )?))?
+                    serde_json::to_string_pretty(&verify::verify(&ingest_jsonl(&evidence, &target)?))?
                 );
                 Ok(())
             } else {
@@ -373,10 +329,7 @@ fn analyze(
         target,
         evidence,
         &config,
-        Revision {
-            commit: git(&["rev-parse", "HEAD"]),
-            branch: git(&["branch", "--show-current"]),
-        },
+        Revision { commit: git(&["rev-parse", "HEAD"]), branch: git(&["branch", "--show-current"]) },
         Utc::now(),
     );
     fs::write(output, proof.canonical_json())?;
@@ -387,8 +340,7 @@ fn analyze(
     }
     if matches!(
         proof.verdict,
-        decomproof_core::policy::Verdict::Blocked
-            | decomproof_core::policy::Verdict::InsufficientEvidence
+        decomproof_core::policy::Verdict::Blocked | decomproof_core::policy::Verdict::InsufficientEvidence
     ) {
         std::process::exit(2);
     }
@@ -411,15 +363,7 @@ fn git_history(root: &Path, needle: &str) -> Result<()> {
     let output = ProcessCommand::new("git")
         .arg("-C")
         .arg(root)
-        .args([
-            "log",
-            "--all",
-            "--date=iso-strict",
-            "--format=%H%x09%aI%x09%s",
-            "-S",
-            needle,
-            "--",
-        ])
+        .args(["log", "--all", "--date=iso-strict", "--format=%H%x09%aI%x09%s", "-S", needle, "--"])
         .output()
         .context("running git history search")?;
     if !output.status.success() {
