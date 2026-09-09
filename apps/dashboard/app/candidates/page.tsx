@@ -1,2 +1,60 @@
-import Link from "next/link"; import { listTargets } from "@/lib/api"; import { Header } from "@/components/header"; import { ApiError, EmptyState } from "@/components/empty-state";
-export default async function Candidates(){try{const targets=await listTargets();return <><Header title="Decommission candidates" subtitle="Targets being observed through the retirement lifecycle."/><div className="grid"><div className="card span12">{targets.length?<table className="table"><thead><tr><th>Target</th><th>Kind</th><th>Lifecycle</th></tr></thead><tbody>{targets.map(t=><tr key={t.id}><td><Link className="mono" href={`/candidates/${t.id}`}>{t.stable_id}</Link></td><td>{t.kind}</td><td>{t.lifecycle_state}</td></tr>)}</tbody></table>:<EmptyState/>}</div></div></>}catch(e){return <><Header title="Decommission candidates" subtitle="Targets being observed through the retirement lifecycle."/><ApiError message={String(e)}/></>}}
+import Link from "next/link";
+
+import { ApiError, EmptyState } from "@/components/empty-state";
+import { Header } from "@/components/header";
+import { listTargets, type Target } from "@/lib/api";
+
+async function loadCandidates(): Promise<{ targets: Target[]; error?: string }> {
+  try {
+    return { targets: await listTargets() };
+  } catch (error) {
+    return { targets: [], error: String(error) };
+  }
+}
+
+export default async function Candidates() {
+  const { targets, error } = await loadCandidates();
+
+  return (
+    <>
+      <Header
+        title="Decommission candidates"
+        subtitle="Targets being observed through the retirement lifecycle."
+      />
+      {error ? (
+        <ApiError message={error} />
+      ) : (
+        <div className="grid">
+          <div className="card span12">
+            {targets.length ? (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Target</th>
+                    <th>Kind</th>
+                    <th>Lifecycle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {targets.map((target) => (
+                    <tr key={target.id}>
+                      <td>
+                        <Link className="mono" href={`/candidates/${target.id}`}>
+                          {target.stable_id}
+                        </Link>
+                      </td>
+                      <td>{target.kind}</td>
+                      <td>{target.lifecycle_state}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <EmptyState />
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
