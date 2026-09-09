@@ -1,0 +1,16 @@
+project:
+  name: decomproof
+policy:
+  runtime_minimum_window_days: 30
+  external_minimum_window_days: 45
+  evidence_maximum_age_hours: 24
+  scheduled_minimum_cycles: 3
+  unidentified_consumers_block: true
+  public_api_requires_deprecation: true
+  api_minimum_sunset_days: 30
+  data_zero_writes_days: 30
+privacy:
+  hash_consumer_ids: true
+  redact_regex:
+    - '(?i)authorization:.*'
+    - '(?i)cookie:.*'
