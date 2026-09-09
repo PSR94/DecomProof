@@ -17,7 +17,11 @@ fn evidence_fixture() -> (Target, Vec<Evidence>) {
     let end = Utc.with_ymd_and_hms(2026, 9, 9, 20, 0, 0).unwrap();
     let mut e = Evidence::build("runtime.http.requests", "bench", &t, end, None, b"bench");
     e.confidence = Confidence::High;
-    e.observation_window = Some(ObservationWindow { start: end - Duration::days(50), end, gaps_seconds: 0 });
+    e.observation_window = Some(ObservationWindow {
+        start: end - Duration::days(50),
+        end,
+        gaps_seconds: 0,
+    });
     e.normalized.insert("count".into(), 0.into());
     e.normalized.insert("active".into(), false.into());
     (t, vec![e])
@@ -30,7 +34,8 @@ fn bench_core(c: &mut Criterion) {
             .map(|i| {
                 let mut e = evidence[0].clone();
                 e.id = format!("ev_{i:020x}");
-                e.normalized.insert("dependency".into(), format!("src/{i}.ts").into());
+                e.normalized
+                    .insert("dependency".into(), format!("src/{i}.ts").into());
                 e
             })
             .collect();
@@ -47,7 +52,9 @@ fn bench_core(c: &mut Criterion) {
     });
     c.bench_function("temporal_pattern_1k", |b| {
         let start = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
-        let xs = (0..1000).map(|i| start + Duration::hours(i * 24)).collect();
+        let xs: Vec<_> = (0..1000)
+            .map(|i| start + Duration::hours(i * 24))
+            .collect();
         b.iter(|| infer_pattern(black_box(xs.clone())));
     });
     c.bench_function("proof_serialization", |b| {
@@ -55,7 +62,10 @@ fn bench_core(c: &mut Criterion) {
             target.clone(),
             evidence.clone(),
             &Config::default(),
-            Revision { commit: "abc".into(), branch: "main".into() },
+            Revision {
+                commit: "abc".into(),
+                branch: "main".into(),
+            },
             Utc.with_ymd_and_hms(2026, 9, 9, 20, 0, 0).unwrap(),
         );
         b.iter(|| black_box(p.canonical_json()));
@@ -63,8 +73,11 @@ fn bench_core(c: &mut Criterion) {
 
     let dir = tempfile::tempdir().unwrap();
     for i in 0..500 {
-        fs::write(dir.path().join(format!("file-{i}.ts")), format!("export const x{i} = 'legacy-export';"))
-            .unwrap();
+        fs::write(
+            dir.path().join(format!("file-{i}.ts")),
+            format!("export const x{i} = 'legacy-export';"),
+        )
+        .unwrap();
     }
     c.bench_function("source_scan_500_files", |b| {
         b.iter(|| scan_workspace(black_box(dir.path()), black_box(&target)))
