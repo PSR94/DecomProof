@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { ApiError, EmptyState } from "@/components/empty-state";
 import { Header } from "@/components/header";
-import { listTargets, type Target } from "@/lib/api";
+import { listTargets } from "@/lib/api";
+import type { Target } from "@/lib/types";
 
 async function loadCandidates(): Promise<{ targets: Target[]; error?: string }> {
   try {
