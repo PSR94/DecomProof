@@ -78,6 +78,13 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
+      - run: npm audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-package-lock
+          path: apps/dashboard/package-lock.json
+          if-no-files-found: error
   security-preflight:
     runs-on: ubuntu-latest
     steps:
