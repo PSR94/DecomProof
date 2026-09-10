@@ -6,6 +6,7 @@ on:
       - '.github/finalize-release.trigger'
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
@@ -27,11 +28,15 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - run: cargo build --release -p decomproof --target ${{ matrix.target }}
-      - shell: bash
+      - name: Package CLI
+        shell: bash
         run: |
-          mkdir -p dist
-          cp target/${{ matrix.target }}/release/decomproof dist/decomproof-${{ matrix.target }}
-          shasum -a 256 dist/decomproof-${{ matrix.target }} > dist/decomproof-${{ matrix.target }}.sha256
+          mkdir -p bundle dist
+          cp target/${{ matrix.target }}/release/decomproof bundle/decomproof
+          chmod +x bundle/decomproof
+          tar -czf dist/decomproof-${{ matrix.target }}.tar.gz -C bundle decomproof
+          cd dist
+          shasum -a 256 decomproof-${{ matrix.target }}.tar.gz > decomproof-${{ matrix.target }}.tar.gz.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.target }}
@@ -54,6 +59,21 @@ jobs:
           pattern: release-*
           path: dist
           merge-multiple: true
+      - name: Verify release checklist state
+        run: |
+          unchecked="$(grep -c '^- \[ \]' docs/release-checklist.md || true)"
+          test "$unchecked" -eq 1
+          grep -Fqx -- '- [ ] create `v0.1.0` tag and GitHub Release only after finalization builds succeed' docs/release-checklist.md
+      - name: Collect validated release evidence
+        run: |
+          mkdir -p release-evidence/benchmarks release-evidence/screenshots release-evidence/proof
+          gh run download 34421384497 -n criterion-benchmark-log -D release-evidence/benchmarks
+          gh run download 34421384497 -n release-ui-screenshots -D release-evidence/screenshots
+          gh run download 34421384468 -n retirement-proof -D release-evidence/proof
+          printf '%s\n' "release_sha=$(git rev-parse HEAD)" > release-evidence/RELEASE_SHA.txt
+          tar -czf dist/decomproof-v0.1.0-release-evidence.tar.gz -C release-evidence .
+          cd dist
+          shasum -a 256 decomproof-v0.1.0-release-evidence.tar.gz > decomproof-v0.1.0-release-evidence.tar.gz.sha256
       - name: Refuse to overwrite an existing release or tag
         run: |
           if gh release view v0.1.0 >/dev/null 2>&1; then
@@ -68,11 +88,12 @@ jobs:
         run: |
           release_sha="$(git rev-parse HEAD)"
           gh release create v0.1.0 \
-            dist/decomproof-x86_64-unknown-linux-gnu \
-            dist/decomproof-x86_64-unknown-linux-gnu.sha256 \
-            dist/decomproof-x86_64-apple-darwin \
-            dist/decomproof-x86_64-apple-darwin.sha256 \
+            dist/decomproof-x86_64-unknown-linux-gnu.tar.gz \
+            dist/decomproof-x86_64-unknown-linux-gnu.tar.gz.sha256 \
+            dist/decomproof-x86_64-apple-darwin.tar.gz \
+            dist/decomproof-x86_64-apple-darwin.tar.gz.sha256 \
+            dist/decomproof-v0.1.0-release-evidence.tar.gz \
+            dist/decomproof-v0.1.0-release-evidence.tar.gz.sha256 \
             --target "$release_sha" \
             --title 'DecomProof v0.1.0' \
-            --notes-file docs/release-notes-v0.1.0.md \
-            --verify-tag=false
+            --notes-file docs/release-notes-v0.1.0.md
