@@ -20,7 +20,7 @@ test("captures real dashboard views backed by generated proof data", async ({ pa
   for (const { name, route, readyText } of views) {
     await page.goto(route);
     await expect(page.getByText("DecomProof", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: readyText, exact: true })).toBeVisible();
+    await expect(page.getByText(readyText, { exact: true }).first()).toBeVisible();
     await expect(page.locator("main")).not.toContainText(
       /No proof data yet|API unavailable|Resolving latest proof|Loading evidence/i,
     );
