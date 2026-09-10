@@ -11,16 +11,19 @@ test("captures real dashboard views backed by generated proof data", async ({ pa
   fs.mkdirSync(output, { recursive: true });
 
   const views = [
-    ["overview", "/"],
-    ["evidence", "/evidence"],
-    ["graph", "/graph"],
-    ["proof", "/proof"],
+    { name: "overview", route: "/", readyText: "Readiness" },
+    { name: "evidence", route: "/evidence", readyText: "Evidence matrix" },
+    { name: "graph", route: "/graph", readyText: "Dependency graph" },
+    { name: "proof", route: "/proof", readyText: "Proof artifact viewer" },
   ] as const;
 
-  for (const [name, route] of views) {
+  for (const { name, route, readyText } of views) {
     await page.goto(route);
     await expect(page.getByText("DecomProof", { exact: true })).toBeVisible();
-    await expect(page.locator("main")).not.toContainText(/No proof data yet|API unavailable/i);
+    await expect(page.getByRole("heading", { name: readyText, exact: true })).toBeVisible();
+    await expect(page.locator("main")).not.toContainText(
+      /No proof data yet|API unavailable|Resolving latest proof|Loading evidence/i,
+    );
     await page.screenshot({ path: path.join(output, `${name}.png`), fullPage: true });
   }
 });
