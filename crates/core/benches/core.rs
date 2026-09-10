@@ -18,11 +18,7 @@ fn evidence_fixture() -> (Target, Vec<Evidence>) {
     let end = Utc.with_ymd_and_hms(2026, 9, 9, 20, 0, 0).unwrap();
     let mut e = Evidence::build("runtime.http.requests", "bench", &t, end, None, b"bench");
     e.confidence = Confidence::High;
-    e.observation_window = Some(ObservationWindow {
-        start: end - Duration::days(50),
-        end,
-        gaps_seconds: 0,
-    });
+    e.observation_window = Some(ObservationWindow { start: end - Duration::days(50), end, gaps_seconds: 0 });
     e.normalized.insert("count".into(), 0.into());
     e.normalized.insert("active".into(), false.into());
     (t, vec![e])
@@ -33,8 +29,7 @@ fn graph_evidence(seed: &Evidence, count: usize) -> Vec<Evidence> {
         .map(|i| {
             let mut e = seed.clone();
             e.id = format!("ev_{i:020x}");
-            e.normalized
-                .insert("dependency".into(), format!("src/{i}.ts").into());
+            e.normalized.insert("dependency".into(), format!("src/{i}.ts").into());
             e
         })
         .collect()
@@ -42,11 +37,7 @@ fn graph_evidence(seed: &Evidence, count: usize) -> Vec<Evidence> {
 
 fn write_source_fixture(dir: &std::path::Path, count: usize) {
     for i in 0..count {
-        fs::write(
-            dir.join(format!("file-{i}.ts")),
-            format!("export const x{i} = 'legacy-export';"),
-        )
-        .unwrap();
+        fs::write(dir.join(format!("file-{i}.ts")), format!("export const x{i} = 'legacy-export';")).unwrap();
     }
 }
 
@@ -75,9 +66,7 @@ fn bench_core(c: &mut Criterion) {
 
     c.bench_function("temporal_pattern_1k", |b| {
         let start = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
-        let xs: Vec<_> = (0..1000)
-            .map(|i| start + Duration::hours(i * 24))
-            .collect();
+        let xs: Vec<_> = (0..1000).map(|i| start + Duration::hours(i * 24)).collect();
         b.iter(|| infer_pattern(black_box(xs.clone())));
     });
 
@@ -86,10 +75,7 @@ fn bench_core(c: &mut Criterion) {
             target.clone(),
             evidence.clone(),
             &Config::default(),
-            Revision {
-                commit: "abc".into(),
-                branch: "main".into(),
-            },
+            Revision { commit: "abc".into(), branch: "main".into() },
             Utc.with_ymd_and_hms(2026, 9, 9, 20, 0, 0).unwrap(),
         );
         b.iter(|| black_box(p.canonical_json()));
