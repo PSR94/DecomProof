@@ -1,4 +1,4 @@
-# Project status — v0.1.0 development
+# Project status — v0.1.0 release candidate
 
 ## Implemented in the repository
 
@@ -21,7 +21,7 @@
 - FastAPI proof/history persistence service and relational reference migration
 - Next.js evidence dashboard with requested developer-tool views plus explicit empty/loading/error states
 - GitHub composite removal gate, CI/Docker/docs/release workflow definitions, issue templates and PR template
-- executable Criterion benchmark scenarios without committed benchmark claims
+- executable Criterion microbenchmarks plus large-repository and large-telemetry stress scenarios with measured baselines in `docs/performance.md`
 - architecture/ADR/concept/security/research/release documentation and SVG branding
 
 ## Experimental / partial
@@ -35,9 +35,15 @@
 
 ## Validation status
 
-The repository contains Rust unit/integration tests, API tests, dashboard tests, schema validation, demo checks, Docker build workflows and CI definitions. In this build session, GitHub did not create workflow runs for connector-originated pushes or the draft validation PR, and the execution sandbox could not clone GitHub because outbound DNS was unavailable. Therefore **no claim is made that CI, Docker builds, frontend/API runtime checks or benchmarks passed in this session**.
+The release candidate has been executed on GitHub-hosted runners rather than being accepted from repository inspection alone.
 
-Real UI screenshots are intentionally not committed until a successful runnable dashboard session can generate them with Playwright. No GitHub Release or `v0.1.0` tag is created until the release checklist is actually satisfied.
+- CI run #59 (`34421384468`) passed Rust formatting, Clippy with warnings denied, Rust workspace tests, the deterministic AtlasCommerce demo, proof-schema validation, API Ruff/pytest, dashboard ESLint/unit/build/Playwright, the production-only npm high-severity audit gate, and secret preflight.
+- Docker builds run #21 (`34420551630`) passed image builds for API, dashboard and AtlasCommerce; `docker compose config --quiet` also passed in the matrix.
+- Release validation run #5 (`34421384497`) passed the README quick-start commands from a clean checkout, the complete Criterion micro/stress benchmark suite, and production-dashboard screenshot capture backed by a generated READY proof persisted through the live FastAPI service.
+- Four release screenshots (overview, evidence matrix, dependency graph and proof viewer) were visually inspected after the run and contain loaded proof data rather than loading, empty or API-error states.
+- Measured performance/stress results and exact reproduction commands are recorded in `docs/performance.md`. The raw benchmark log and screenshot bundle remain attached to the Release validation workflow run and are intended to be copied into the GitHub Release assets.
+
+A `v0.1.0` tag and GitHub Release are still intentionally absent at this point. The atomic finalization workflow builds Linux and macOS CLI artifacts first and is triggered only after the release checklist is complete.
 
 ## Roadmap-only
 
