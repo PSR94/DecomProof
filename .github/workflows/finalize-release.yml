@@ -1,0 +1,78 @@
+name: Finalize v0.1.0
+
+on:
+  pull_request:
+    paths:
+      - '.github/finalize-release.trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  build-cli:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'validation/ci-run'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo build --release -p decomproof --target ${{ matrix.target }}
+      - shell: bash
+        run: |
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/decomproof dist/decomproof-${{ matrix.target }}
+          shasum -a 256 dist/decomproof-${{ matrix.target }} > dist/decomproof-${{ matrix.target }}.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'validation/ci-run'
+    needs: build-cli
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Refuse to overwrite an existing release or tag
+        run: |
+          if gh release view v0.1.0 >/dev/null 2>&1; then
+            echo 'v0.1.0 release already exists' >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin refs/tags/v0.1.0 >/dev/null 2>&1; then
+            echo 'v0.1.0 tag already exists' >&2
+            exit 1
+          fi
+      - name: Publish v0.1.0 atomically after both builds succeed
+        run: |
+          release_sha="$(git rev-parse HEAD)"
+          gh release create v0.1.0 \
+            dist/decomproof-x86_64-unknown-linux-gnu \
+            dist/decomproof-x86_64-unknown-linux-gnu.sha256 \
+            dist/decomproof-x86_64-apple-darwin \
+            dist/decomproof-x86_64-apple-darwin.sha256 \
+            --target "$release_sha" \
+            --title 'DecomProof v0.1.0' \
+            --notes-file docs/release-notes-v0.1.0.md \
+            --verify-tag=false
