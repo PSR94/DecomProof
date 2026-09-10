@@ -1,0 +1,100 @@
+name: Release validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/release-validation.trigger'
+      - '.github/workflows/release-validation.yml'
+      - 'apps/dashboard/e2e/release-screenshots.spec.ts'
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-checkout-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: make setup
+      - run: make test
+      - run: make demo
+      - run: make demo-stage-0
+      - run: make demo-ready
+      - run: make demo-verify
+
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run Criterion benchmark scenarios
+        run: |
+          set -o pipefail
+          cargo bench -p decomproof-core --bench core -- --noplot 2>&1 | tee benchmark.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: criterion-benchmark-log
+          path: benchmark.txt
+          if-no-files-found: error
+
+  release-screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate a real READY proof
+        run: cargo run -q -p decomproof -- demo --stage 4
+      - name: Install API
+        run: pip install -e './apps/api[dev]'
+      - name: Start API and seed generated proof
+        run: |
+          DECOMPROOF_DATABASE_URL=sqlite:///./release-screenshot.db nohup uvicorn decomproof_api.main:app --app-dir apps/api --host 127.0.0.1 --port 8000 > api.log 2>&1 &
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8000/readyz >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            --data-binary @retirement.proof.json \
+            http://127.0.0.1:8000/api/v1/proofs/atlascommerce > seeded-analysis.json
+      - name: Install and build dashboard
+        working-directory: apps/dashboard
+        run: |
+          npm install
+          npm run build
+          npx playwright install --with-deps chromium
+      - name: Start production dashboard
+        working-directory: apps/dashboard
+        run: |
+          DECOMPROOF_API_URL=http://127.0.0.1:8000/api/v1 nohup npm run start -- --hostname 127.0.0.1 > dashboard.log 2>&1 &
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3000 >/dev/null; then break; fi
+            sleep 1
+          done
+      - name: Capture seeded release screenshots
+        working-directory: apps/dashboard
+        env:
+          DECOMPROOF_RELEASE_SCREENSHOTS: '1'
+          DECOMPROOF_API_URL: http://127.0.0.1:8000/api/v1
+        run: CI= npx playwright test e2e/release-screenshots.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-ui-screenshots
+          path: |
+            apps/dashboard/release-screenshots/*.png
+            apps/dashboard/dashboard.log
+            api.log
+            seeded-analysis.json
+          if-no-files-found: error
