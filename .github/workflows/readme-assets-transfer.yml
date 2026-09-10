@@ -23,11 +23,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p docs/assets/readme
-          base64 -d .readme-transfer/hero.b64 > docs/assets/readme/decomproof-hero.webp
-          base64 -d .readme-transfer/architecture.b64 > docs/assets/readme/decomproof-architecture.webp
-          base64 -d .readme-transfer/flow.b64 > docs/assets/readme/decomproof-flow.webp
+          cat .readme-transfer/hero.*.b64 | base64 -d > docs/assets/readme/decomproof-hero.webp
+          cat .readme-transfer/architecture.*.b64 | base64 -d > docs/assets/readme/decomproof-architecture.webp
+          cat .readme-transfer/flow.*.b64 | base64 -d > docs/assets/readme/decomproof-flow.webp
 
-      - name: Verify bytes, WebP structure, and dimensions
+      - name: Verify exact bytes and dimensions
         shell: bash
         run: |
           python - <<'PY'
@@ -35,13 +35,13 @@ jobs:
           import hashlib
 
           expected = {
-              Path('docs/assets/readme/decomproof-hero.webp'): ('af09e2549399a0c2697b6268e69288bba6e0ed2d154610f69006dd3179c4bb85', (2172, 724)),
-              Path('docs/assets/readme/decomproof-architecture.webp'): ('1f8983ec22b1945e9d60bdfa346c8ccc39e764d294ec3f40a8455e0c6aa2be0e', (1672, 941)),
-              Path('docs/assets/readme/decomproof-flow.webp'): ('1895df946dbc4adfc84a33bb73f465aff8873ded5b31c87e3418ae75decb57dc', (1672, 941)),
+              Path('docs/assets/readme/decomproof-hero.webp'): ('8779927a39c9069a4af6f51482a8a09edd3783171f89a14f7d99d0b6945059ae', (1600, 533)),
+              Path('docs/assets/readme/decomproof-architecture.webp'): ('43d8d919c2926eed9b23544a53cbef01adcd55c176571d714d541354867013a4', (1280, 720)),
+              Path('docs/assets/readme/decomproof-flow.webp'): ('1026c6d4560951744827e803d0dcf25a1eb312ffb5031d2bc29def45348a0f2e', (1280, 720)),
           }
 
           def webp_dims(data):
-              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', 'invalid WebP RIFF signature'
+              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', 'invalid WebP signature'
               pos = 12
               while pos + 8 <= len(data):
                   fourcc = data[pos:pos+4]
@@ -50,17 +50,18 @@ jobs:
                   if fourcc == b'VP8 ':
                       frame = data[payload:payload+10]
                       assert frame[3:6] == b'\x9d\x01\x2a', 'invalid VP8 frame header'
-                      width = int.from_bytes(frame[6:8], 'little') & 0x3fff
-                      height = int.from_bytes(frame[8:10], 'little') & 0x3fff
-                      return width, height
+                      return (
+                          int.from_bytes(frame[6:8], 'little') & 0x3fff,
+                          int.from_bytes(frame[8:10], 'little') & 0x3fff,
+                      )
                   pos = payload + size + (size & 1)
-              raise AssertionError('no VP8 chunk found')
+              raise AssertionError('VP8 chunk not found')
 
           for path, (want_sha, want_dims) in expected.items():
               data = path.read_bytes()
               sha = hashlib.sha256(data).hexdigest()
               dims = webp_dims(data)
-              assert sha == want_sha, f'{path}: sha256 mismatch {sha}'
+              assert sha == want_sha, f'{path}: sha256 mismatch: {sha}'
               assert dims == want_dims, f'{path}: dimensions {dims} != {want_dims}'
               print(f'OK {path}: {dims[0]}x{dims[1]} sha256={sha}')
           PY
@@ -97,7 +98,7 @@ jobs:
           p.write_text(s)
           PY
 
-      - name: Verify README references and remove obsolete images
+      - name: Verify README references and remove obsolete README image versions
         shell: bash
         run: |
           set -euo pipefail
@@ -117,7 +118,7 @@ jobs:
           first_block = s.split('</p>', 1)[0]
           assert 'docs/assets/readme/decomproof-hero.webp' in first_block
           assert 'width="100%"' in first_block
-          assert s.lstrip().startswith('<p align="center">'), 'hero is not the first README element'
+          assert s.lstrip().startswith('<p align="center">')
           print('README references verified')
           PY
           git rm -f assets/hero.svg assets/banner.svg assets/proof-flow.svg assets/proof-flow-compact.svg
