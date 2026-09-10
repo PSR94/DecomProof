@@ -23,44 +23,33 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p docs/assets/readme
-          cat .readme-transfer/hero.*.b64 | base64 -d > docs/assets/readme/decomproof-hero.webp
-          cat .readme-transfer/architecture.*.b64 | base64 -d > docs/assets/readme/decomproof-architecture.webp
-          cat .readme-transfer/flow.*.b64 | base64 -d > docs/assets/readme/decomproof-flow.webp
+          cat .readme-transfer/final-hero.*.b64 | base64 -d > docs/assets/readme/decomproof-hero.webp
+          cat .readme-transfer/final-architecture.*.b64 | base64 -d > docs/assets/readme/decomproof-architecture.webp
+          cat .readme-transfer/final-flow.*.b64 | base64 -d > docs/assets/readme/decomproof-flow.webp
 
       - name: Verify exact bytes and dimensions
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
+          from PIL import Image
           import hashlib
 
           expected = {
-              Path('docs/assets/readme/decomproof-hero.webp'): ('8779927a39c9069a4af6f51482a8a09edd3783171f89a14f7d99d0b6945059ae', (1600, 533)),
-              Path('docs/assets/readme/decomproof-architecture.webp'): ('43d8d919c2926eed9b23544a53cbef01adcd55c176571d714d541354867013a4', (1280, 720)),
-              Path('docs/assets/readme/decomproof-flow.webp'): ('1026c6d4560951744827e803d0dcf25a1eb312ffb5031d2bc29def45348a0f2e', (1280, 720)),
+              Path('docs/assets/readme/decomproof-hero.webp'): ('6d09ad9c3ae2bbd6d2360649ac6dace3c6c83acd13f0a63098da8db71dc01138', (1500, 500)),
+              Path('docs/assets/readme/decomproof-architecture.webp'): ('053de29f20d7a0a932810aa35e280b237d7b749af38e8765c23e5feb84522dd3', (1100, 619)),
+              Path('docs/assets/readme/decomproof-flow.webp'): ('f276053745b5c91f26c3ef31590b51aee2a33fa949329571ae106bdd25c31a92', (1100, 619)),
           }
-
-          def webp_dims(data):
-              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', 'invalid WebP signature'
-              pos = 12
-              while pos + 8 <= len(data):
-                  fourcc = data[pos:pos+4]
-                  size = int.from_bytes(data[pos+4:pos+8], 'little')
-                  payload = pos + 8
-                  if fourcc == b'VP8 ':
-                      frame = data[payload:payload+10]
-                      assert frame[3:6] == b'\x9d\x01\x2a', 'invalid VP8 frame header'
-                      return (
-                          int.from_bytes(frame[6:8], 'little') & 0x3fff,
-                          int.from_bytes(frame[8:10], 'little') & 0x3fff,
-                      )
-                  pos = payload + size + (size & 1)
-              raise AssertionError('VP8 chunk not found')
 
           for path, (want_sha, want_dims) in expected.items():
               data = path.read_bytes()
               sha = hashlib.sha256(data).hexdigest()
-              dims = webp_dims(data)
+              with Image.open(path) as image:
+                  image.verify()
+              with Image.open(path) as image:
+                  dims = image.size
+                  fmt = image.format
+              assert fmt == 'WEBP', f'{path}: expected WEBP, got {fmt}'
               assert sha == want_sha, f'{path}: sha256 mismatch: {sha}'
               assert dims == want_dims, f'{path}: dimensions {dims} != {want_dims}'
               print(f'OK {path}: {dims[0]}x{dims[1]} sha256={sha}')
@@ -91,7 +80,7 @@ jobs:
           s = s.replace(toc_old, toc_new, 1)
 
           arch_anchor = 'The Rust core owns target identity, evidence normalization, temporal logic, graph construction, policy evaluation, scoring, and proof generation. Network-facing systems are optional shells around that deterministic core.\n\n## Safety model'
-          arch_section = '''## Architecture\n\n<p align="center">\n  <img src="docs/assets/readme/decomproof-architecture.webp" alt="DecomProof architecture showing interfaces, evidence inputs, deterministic core engine, API/dashboard, and outputs" width="100%" />\n</p>\n\nThe Rust core owns target identity, evidence normalization, temporal logic, graph construction, policy evaluation, scoring, and proof generation. Network-facing systems are optional shells around that deterministic core.\n\nFor the text-based architecture reference and ADRs, see [`docs/architecture`](docs/architecture/).\n\n## Safety model'''
+          arch_section = '''## Architecture\n\n<p align="center">\n  <img src="docs/assets/readme/decomproof-architecture.webp" alt="DecomProof architecture showing interfaces, evidence inputs, deterministic core engine, API/dashboard, and outputs" width="100%" />\n</p>\n\nThe Rust core owns target identity, evidence normalization, temporal logic, graph construction, policy evaluation, scoring, and proof generation. Network-facing systems are optional shells around that deterministic core.\n\nFor detailed text diagrams and ADRs, see [`docs/architecture`](docs/architecture/).\n\n## Safety model'''
           assert s.count(arch_anchor) == 1, 'expected architecture insertion anchor'
           s = s.replace(arch_anchor, arch_section, 1)
 
@@ -118,12 +107,13 @@ jobs:
           first_block = s.split('</p>', 1)[0]
           assert 'docs/assets/readme/decomproof-hero.webp' in first_block
           assert 'width="100%"' in first_block
+          assert 'height=' not in first_block
           assert s.lstrip().startswith('<p align="center">')
           print('README references verified')
           PY
           git rm -f assets/hero.svg assets/banner.svg assets/proof-flow.svg assets/proof-flow-compact.svg
 
-      - name: Remove transfer files and commit clean content state
+      - name: Remove all transfer files and commit clean content state
         shell: bash
         run: |
           set -euo pipefail
