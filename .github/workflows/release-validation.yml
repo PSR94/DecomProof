@@ -33,6 +33,7 @@ jobs:
       - name: Run Criterion benchmark scenarios
         run: |
           set -o pipefail
+          rm -rf target/criterion
           cargo bench -p decomproof-core --bench core -- --noplot 2>&1 | tee benchmark.txt
       - uses: actions/upload-artifact@v4
         if: always()
