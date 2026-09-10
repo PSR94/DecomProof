@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/hero.svg" alt="DecomProof: evidence-backed software decommissioning" width="920" />
+  <img src="assets/Decom Banner.png" alt="DecomProof: evidence-backed software decommissioning" width="920" />
 </p>
 
 # DecomProof
